@@ -1,0 +1,520 @@
+<template>
+    <div class="walk-in-container">
+        <!-- Header -->
+        <div class="slds-page-header gap">
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <lightning-icon icon-name="utility:database" size="medium"></lightning-icon>
+                        </div>
+                        <div class="slds-media__body">
+                            <h1 class="slds-page-header__title">Inventory</h1>
+                            <p class="slds-page-header__info">Quick room booking</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="gap">
+            <lightning-card class="filter-card">
+                <div class="slds-p-around_medium">
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-combobox name="airport" label="Airport" value={selectedAirport}
+                                options={airports} onchange={handleAirportChange} variant="label-stacked">
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input type="date" name="date" label="Date" value={selectedDate}
+                                onchange={handleDateChange} variant="label-stacked">
+                            </lightning-input>
+                        </div>
+                    </div>
+                </div>
+            </lightning-card>
+        </div>
+
+        <!-- Room Inventory Grid -->
+        <lightning-tabset>
+            <lightning-tab label="Room Availability">
+                <lightning-card title="Rooms" class="inventory-card">
+                    <template if:true={loading}>
+                        <div class="slds-p-around_large slds-text-align_center">
+                            <lightning-spinner alternative-text="Loading rooms..." size="medium"></lightning-spinner>
+                        </div>
+                    </template>
+
+                    <template if:false={loading}>
+                        <div class="slds-p-around_medium">
+                            <template if:true={roomInventory.length}>
+                                <div class="room-grid">
+                                    <template for:each={roomInventory} for:item="room">
+                                        <div key={room.roomId} class={room.cardClass} data-room-id={room.roomId}>
+                                            <div class="room-header">
+                                                <div class="room-code">{room.roomName}</div>
+                                                <div class="room-type">{room.roomType}</div>
+                                                <div class="room-toggle">
+                                                    <lightning-input type="toggle" label="" checked={room.isActive}
+                                                        data-room-id={room.roomId} onchange={handleRoomToggle}>
+                                                    </lightning-input>
+                                                </div>
+                                            </div>
+                                            <div class="room-name">{room.roomCode}</div>
+                                            <div class="room-status">
+                                                <lightning-icon icon-name={room.statusIcon}
+                                                    size="small"></lightning-icon>
+                                                <span class={room.statusClass}>{room.statusText}</span>
+                                            </div>
+                                            <div class="room-availability">{room.availabilityText}</div>
+
+                                            <!-- Room Pricing -->
+                                            <template if:true={room.pricing}>
+                                                <div class="room-pricing">
+                                                    <template for:each={room.pricing} for:item="price">
+                                                        <div key={price.duration} class="price-item">
+                                                            <span class="price-duration">{price.duration}:</span>
+                                                            <span class="price-amount">₹{price.amount}</span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+
+                                            <!-- Room Controls -->
+                                            <div class="room-controls">
+                                                <div class="room-buttons">
+                                                    <lightning-button-group>
+                                                        <template if:true={room.isBookable}>
+                                                            <lightning-button label="Book" size="small"
+                                                                icon-name="utility:log_a_call"
+                                                                data-room-id={room.roomId} onclick={handleRoomSelect}>
+                                                            </lightning-button>
+                                                        </template>
+                                                        <template if:false={room.isBookable}>
+                                                            <lightning-button label="Unavailable"
+                                                                icon-name="utility:offline" size="small" disabled>
+                                                            </lightning-button>
+                                                        </template>
+                                                        <lightning-button label="Bookings" icon-name="utility:preview"
+                                                            size="small" data-room-id={room.roomId}
+                                                            onclick={handleViewBookings}>
+                                                        </lightning-button>
+                                                    </lightning-button-group>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <template if:false={roomInventory.length}>
+                                <div class="slds-illustration slds-illustration_small">
+                                    <div class="slds-text-longform">
+                                        <h3 class="slds-text-heading_medium">No rooms available</h3>
+                                        <p class="slds-text-body_regular">
+                                            Please select a different airport or date to view available rooms.
+                                        </p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </lightning-card>
+            </lightning-tab>
+            <lightning-tab label="All Bookings">
+                <c-en-ns-booking-dashboard></c-en-ns-booking-dashboard>
+            </lightning-tab>
+        </lightning-tabset>
+
+        <!-- Booking Form Modal -->
+        <template if:true={showBookingForm}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                            title="Close" onclick={closeBookingForm}>
+                            <lightning-icon icon-name="utility:close" alternative-text="close"
+                                size="small"></lightning-icon>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 class="slds-text-heading_medium">Walk-In Booking</h2>
+                    </header>
+
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <!-- Booking Summary -->
+                        <div class="booking-summary slds-box slds-p-around_medium slds-m-bottom_medium">
+                            <h3 class="slds-text-heading_small slds-m-bottom_small">Booking Summary</h3>
+                            <div class="summary-grid">
+                                <div class="summary-item">
+                                    <span class="summary-label">Room:</span>
+                                    <span class="summary-value">{selectedRoom.roomCode} - {selectedRoom.roomName}</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">Duration:</span>
+                                    <span class="summary-value">{selectedDuration} Hours</span>
+                                </div>
+                                <template if:true={formattedStartTime}>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Start Time:</span>
+                                        <span class="summary-value">{formattedStartTime}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">End Time:</span>
+                                        <span class="summary-value">{formattedEndTime}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Start Time Selection -->
+                        <div class="customer-form slds-box">
+                            <div class="slds-grid slds-gutters slds-wrap">
+                                <div class="slds-col slds-size_3-of-5">
+                                    <div class="slds-form-element">
+                                        <lightning-input type="datetime-local" name="startTime" label=""
+                                            value={selectedStartTimeString} onchange={handleStartTimeChange} required>
+                                        </lightning-input>
+                                    </div>
+                                </div>
+
+                                <!-- Duration Selection -->
+                                <div class="slds-col slds-size_2-of-5">
+                                    <div class="slds-form-element">
+                                        <lightning-combobox name="duration" label="Select Duration"
+                                            value={selectedDuration} options={availableDurationOptions}
+                                            onchange={handleDurationChange} required>
+                                        </lightning-combobox>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Customer Information -->
+                        <div class="customer-form slds-box slds-p-around_medium">
+                            <h3 class="slds-text-heading_small slds-m-bottom_medium">Guest Registration</h3>
+
+                            <!-- Phone Number Search -->
+                            <div class="slds-form-element slds-m-bottom_small">
+                                <lightning-input type="tel" name="phone" label="Phone Number" value={customerData.phone}
+                                    onchange={handlePhoneChange} data-field="phone" required>
+                                </lightning-input>
+                                <div class={customerStatusClass}>
+                                    <lightning-icon icon-name="utility:info" size="xx-small"></lightning-icon>
+                                    {customerStatusMessage}
+                                </div>
+                            </div>
+
+                            <!-- Personal Information -->
+                            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+                                <div class="slds-col slds-size_1-of-4">
+                                    <lightning-combobox name="title" label="Title" value={customerData.title}
+                                        options={titleOptions} onchange={handleCustomerFieldChange} data-field="title">
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input type="text" name="firstName" label="First Name"
+                                        value={customerData.firstName} onchange={handleCustomerFieldChange}
+                                        data-field="firstName" required>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-4">
+                                    <lightning-input type="text" name="lastName" label="Last Name"
+                                        value={customerData.lastName} onchange={handleCustomerFieldChange}
+                                        data-field="lastName" required>
+                                    </lightning-input>
+                                </div>
+                            </div>
+
+                            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input type="email" name="email" label="Email" value={customerData.email}
+                                        onchange={handleCustomerFieldChange} data-field="email" required>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <!-- <lightning-input type="text" name="nationality" label="Nationality"
+                                        value={customerData.nationality} onchange={handleCustomerFieldChange}
+                                        data-field="nationality" required>
+                                    </lightning-input> -->
+                                    <lightning-combobox name="nationality" label="Nationality"
+                                        options={nationalityOptions} value={customerData.nationality}
+                                        onchange={handleCustomerFieldChange} data-field="nationality" required>
+                                    </lightning-combobox>
+                                </div>
+                            </div>
+
+                            <!-- Address Information -->
+                            <h4 class="slds-text-heading_x-small slds-m-bottom_small">Address Information</h4>
+                            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+                                <div class="slds-col slds-size_1-of-1">
+                                    <lightning-input type="text" name="street" label="Street Address"
+                                        value={customerData.street} onchange={handleCustomerFieldChange}
+                                        data-field="street" required>
+                                    </lightning-input>
+                                </div>
+                            </div>
+
+                            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+                                <div class="slds-col slds-size_1-of-3">
+                                    <lightning-input type="text" name="city" label="City" value={customerData.city}
+                                        onchange={handleCustomerFieldChange} data-field="city" required>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-3">
+                                    <lightning-input type="text" name="statePostalCode" label="State/Postal Code"
+                                        value={customerData.statePostalCode} onchange={handleCustomerFieldChange}
+                                        data-field="statePostalCode" required>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-3">
+                                    <lightning-input type="text" name="country" label="Country"
+                                        value={customerData.country} onchange={handleCustomerFieldChange}
+                                        data-field="country" required>
+                                    </lightning-input>
+                                </div>
+                            </div>
+
+                            <!-- Identity Information -->
+                            <h4 class="slds-text-heading_x-small slds-m-bottom_small">Identity Information</h4>
+                            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <!-- <lightning-input type="text" name="idType" label="Id Type"
+                                        value={customerData.idType} onchange={handleCustomerFieldChange}
+                                        data-field="idType" required>
+                                    </lightning-input> -->
+                                    <lightning-combobox name="idType" label="Id Type" options={idTypeOptions}
+                                        value={customerData.idType} onchange={handleCustomerFieldChange}
+                                        data-field="idType" required>
+                                    </lightning-combobox>
+                                </div>
+                            </div>
+                            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input type="text" name="passportNumber" label="Passport/ID Number"
+                                        value={customerData.passportNumber} onchange={handleCustomerFieldChange}
+                                        data-field="passportNumber" required>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input type="text" name="passportIssuePlace" label="Place of Issue"
+                                        value={customerData.passportIssuePlace} onchange={handleCustomerFieldChange}
+                                        data-field="passportIssuePlace">
+                                    </lightning-input>
+                                </div>
+                            </div>
+
+                            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input type="date" name="passportIssueDate" label="Issue Date"
+                                        value={customerData.passportIssueDate} onchange={handleCustomerFieldChange}
+                                        data-field="passportIssueDate">
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input type="date" name="passportExpiryDate" label="Expiry Date"
+                                        value={customerData.passportExpiryDate} onchange={handleCustomerFieldChange}
+                                        data-field="passportExpiryDate">
+                                    </lightning-input>
+                                </div>
+                            </div>
+
+                            <!-- Payment Method -->
+                            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-combobox name="paymentMethod" label="Payment Method"
+                                        value={customerData.paymentMethod} options={paymentMethodOptions}
+                                        onchange={handleCustomerFieldChange} data-field="paymentMethod" required>
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input type="text" name="emergencyContact" label="Emergency Contact Name"
+                                        value={customerData.emergencyContact} onchange={handleCustomerFieldChange}
+                                        data-field="emergencyContact">
+                                    </lightning-input>
+                                </div>
+                            </div>
+
+                            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_medium">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-input type="tel" name="emergencyPhone" label="Emergency Contact Phone"
+                                        value={customerData.emergencyPhone} onchange={handleCustomerFieldChange}
+                                        data-field="emergencyPhone">
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning-textarea name="specialRequests" label="Special Requests"
+                                        value={customerData.specialRequests} onchange={handleCustomerFieldChange}
+                                        data-field="specialRequests">
+                                    </lightning-textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <footer class="slds-modal__footer">
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning-button variant="neutral" label="Cancel" onclick={closeBookingForm}
+                                    class="full-width">
+                                </lightning-button>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning-button variant="brand" label="Create Booking" onclick={handleCreateBooking}
+                                    disabled={isFormInvalid} class="full-width">
+                                </lightning-button>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <!-- Room Bookings Modal -->
+        <template if:true={showRoomBookingsModal}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open"
+                style="overflow: visible !important">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                            title="Close" onclick={closeRoomBookingsModal}>
+                            <lightning-icon icon-name="utility:close" alternative-text="close"
+                                size="small"></lightning-icon>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 class="slds-text-heading_medium">Room Bookings - {selectedRoomForBookings.roomCode}</h2>
+                        <p class="slds-text-body_small">Date: {selectedDate}</p>
+                    </header>
+
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <template if:true={loadingBookings}>
+                            <div class="slds-text-align_center slds-p-around_large">
+                                <lightning-spinner alternative-text="Loading bookings..."
+                                    size="medium"></lightning-spinner>
+                            </div>
+                        </template>
+
+                        <template if:false={loadingBookings}>
+                            <template if:true={roomBookings.length}>
+                                <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                                    <thead>
+                                        <tr class="slds-line-height_reset">
+                                            <th class="slds-text-title_caps" scope="col">
+                                                <div class="slds-truncate" title="Booking">Booking</div>
+                                            </th>
+                                            <th class="slds-text-title_caps" scope="col">
+                                                <div class="slds-truncate" title="Time">Time</div>
+                                            </th>
+                                            <th class="slds-text-title_caps" scope="col">
+                                                <div class="slds-truncate" title="Customer">Customer</div>
+                                            </th>
+                                            <!-- <th class="slds-text-title_caps" scope="col">
+                                                <div class="slds-truncate" title="Status">Status</div>
+                                            </th> -->
+                                            <th class="slds-text-title_caps" scope="col">
+                                                <div class="slds-truncate" title="Actions">Actions</div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template for:each={roomBookings} for:item="booking">
+                                            <tr key={booking.bookingId} class="slds-hint-parent">
+                                                <td>
+                                                    <div class="slds-truncate">
+                                                        <!-- <a href={booking.bookingUrl} target="_blank">{booking.bookingNumber}</a> -->
+                                                        <a href={booking.bookingUrl}
+                                                            target="_blank">{booking.status}</a>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate">
+                                                        {booking.startTime} - {booking.endTime}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="slds-truncate" title={booking.customerPhone}>
+                                                        {booking.maskedPhone}
+                                                    </div>
+                                                </td>
+                                                <!-- <td>
+                                                    <div class="slds-truncate">
+                                                        <lightning-badge label={booking.status}></lightning-badge>
+                                                    </div>
+                                                </td> -->
+                                                <td>
+                                                    <lightning-button-menu alternative-text="Show menu"
+                                                        menu-alignment="auto" size="small">
+                                                        <template if:true={booking.canCheckIn}>
+                                                            <lightning-menu-item value="checkin" label="Check In"
+                                                                data-action="checkin"
+                                                                data-booking-id={booking.bookingId}
+                                                                onclick={handleBookingAction}>
+                                                            </lightning-menu-item>
+                                                        </template>
+                                                        <template if:true={booking.canCheckOut}>
+                                                            <lightning-menu-item value="checkout" label="Check Out"
+                                                                data-action="checkout"
+                                                                data-booking-id={booking.bookingId}
+                                                                onclick={handleBookingAction}>
+                                                            </lightning-menu-item>
+                                                        </template>
+                                                        <template if:true={booking.canMarkNoShow}>
+                                                            <lightning-menu-item value="noshow" label="Mark No Show"
+                                                                data-action="noshow" data-booking-id={booking.bookingId}
+                                                                onclick={handleBookingAction}>
+                                                            </lightning-menu-item>
+                                                        </template>
+                                                        <template if:true={booking.canCancel}>
+                                                            <lightning-menu-item value="cancel" label="Cancel Booking"
+                                                                data-action="cancel" data-booking-id={booking.bookingId}
+                                                                onclick={handleBookingAction}>
+                                                            </lightning-menu-item>
+                                                        </template>
+                                                        <template if:true={booking.canExtend}>
+                                                            <lightning-menu-item value="extend" label="Extend (1 Hour)"
+                                                                data-action="extend" data-hour="1"
+                                                                data-booking-id={booking.bookingId}
+                                                                onclick={handleBookingAction}>
+                                                            </lightning-menu-item>
+                                                            <lightning-menu-item value="extend" label="Extend (2 Hour)"
+                                                                data-action="extend" data-hour="2"
+                                                                data-booking-id={booking.bookingId}
+                                                                onclick={handleBookingAction}>
+                                                            </lightning-menu-item>
+                                                            <lightning-menu-item value="extend" label="Extend (3 Hour)"
+                                                                data-action="extend" data-hour="3"
+                                                                data-booking-id={booking.bookingId}
+                                                                onclick={handleBookingAction}>
+                                                            </lightning-menu-item>
+                                                        </template>
+                                                    </lightning-button-menu>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </template>
+
+                            <template if:false={roomBookings.length}>
+                                <div class="slds-text-align_center slds-p-around_large">
+                                    <lightning-icon icon-name="utility:info" size="large"></lightning-icon>
+                                    <h3 class="slds-text-heading_small slds-m-top_small">No bookings found</h3>
+                                    <p class="slds-text-body_regular">This room has no bookings for the selected date.
+                                    </p>
+                                </div>
+                            </template>
+                        </template>
+                    </div>
+
+                    <footer class="slds-modal__footer">
+                        <lightning-button variant="neutral" label="Close" onclick={closeRoomBookingsModal}>
+                        </lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+    </div>
+</template>

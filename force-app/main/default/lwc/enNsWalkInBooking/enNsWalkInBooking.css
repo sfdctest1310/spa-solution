@@ -1,0 +1,312 @@
+.walk-in-container {
+    background: #f4f6f9;
+    min-height: 100vh;
+    padding: 1rem;
+}
+
+.filter-card {
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.inventory-card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Room Grid */
+.room-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Room Cards */
+.room-card {
+    border: 2px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 1rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.room-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.room-card.available {
+    border-color: #2e844a;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.room-card.available:hover {
+    border-color: #166534;
+}
+
+.room-card.occupied {
+    border-color: #d97706;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.room-card.occupied:hover {
+    border-color: #92400e;
+}
+
+.room-card.maintenance {
+    border-color: #dc2626;
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    cursor: not-allowed;
+}
+
+.room-card.soon-available {
+    border-color: #7c3aed;
+    background: linear-gradient(135deg, #faf5ff 0%, #e9d5ff 100%);
+}
+
+/* Room Card Content */
+.room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.room-code {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #1e293b;
+}
+
+.room-type {
+    font-size: 0.75rem;
+    background: #f1f5f9;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.room-name {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.room-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.room-status lightning-icon {
+    flex-shrink: 0;
+}
+
+.status-available {
+    color: #2e844a;
+    font-weight: 600;
+}
+
+.status-occupied {
+    color: #d97706;
+    font-weight: 600;
+}
+
+.status-maintenance {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.status-soon-available {
+    color: #7c3aed;
+    font-weight: 600;
+}
+
+.room-availability {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+}
+
+/* Room Pricing */
+.room-pricing {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background: #f8fafc;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+.price-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+}
+
+.price-item:last-child {
+    margin-bottom: 0;
+}
+
+.price-duration {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.price-amount {
+    color: #059669;
+    font-weight: 600;
+}
+
+/* Room Controls */
+.room-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.room-toggle {
+    display: flex;
+    justify-content: center;
+    padding: 0.25rem 0;
+    position: absolute;
+    margin-left: 5rem;
+    margin-top: 1rem;
+}
+
+.room-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.room-buttons lightning-button {
+    width: 100%;
+}
+
+.book-button {
+    margin-top: 8px;
+}
+
+.book-button lightning-button {
+    width: 100%;
+}
+
+.view-bookings-button {
+    margin-top: 4px;
+}
+
+.room-card .view-bookings-button lightning-button {
+    width: 100%;
+}
+
+/* Booking Form Styles */
+.booking-summary {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-left: 4px solid #0284c7;
+}
+
+.summary-grid {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.summary-label {
+    font-weight: 500;
+    color: #374151;
+}
+
+.summary-value {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.customer-form {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+}
+
+.full-width {
+    width: 100%;
+}
+
+/* Modal Enhancements */
+.slds-modal__container {
+    max-width: 600px;
+}
+
+/* Status Classes */
+.slds-text-color_success {
+    color: #2e844a !important;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
+
+.slds-text-color_default {
+    color: #6b7280 !important;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .room-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .walk-in-container {
+        padding: 0.5rem;
+    }
+}
+
+/* Animation for loading */
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.loading-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.gap {
+    margin-bottom: 0.2rem;
+}
+
+.button-row {
+    display: flex;
+    gap: 0.5rem;
+    /* space between buttons */
+    margin-top: 0.5rem;
+}
+
+.slds-modal__content {
+    /* overflow: visible !important; */
+}
